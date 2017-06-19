@@ -674,7 +674,7 @@ func (self *ServerGroup) AddServer(zkConn zkhelper.Conn, s *Server, passwd strin
 				offset := self.ReplInfo.MasterSeq - lastSeq
 				log.Infof("%s last seq: %v offset: %v", server.Addr, lastSeq, offset)
 				if offset < 0 {
-					log.Warnf(fmt.Errorf("detect full SYNC for slave - %s seq: %v master - %s seq: %v",
+					log.Warnf("detect full SYNC for slave - %s seq: %v master - %s seq: %v",
 						server.Addr, lastSeq, s.Addr, self.ReplInfo.MasterSeq)
 				}
 				dict[server.Addr] = self.ReplInfo.TargetSeq - offset
