@@ -35,7 +35,7 @@ func NewTopo(product string, addrs []string, interval int) *Topo {
 		meta:        &models.Meta{Epic: 0},
 		product:     product,
 		interval:    interval,
-		notify:      make(chan *models.Meta),
+		notify:      make(chan *models.Meta, 10),
 		exit:        make(chan int),
 	}
 	return t
@@ -64,6 +64,9 @@ func (t *Topo) qurey() ([]byte, error) {
 		return nil, errors.Trace(err)
 	}
 	defer c.Close()
+	
+	c.SetReadDeadline(time.Now().Add(time.Second))
+	c.SetWriteDeadline(time.Now().Add(time.Second))
 
 	epic := make([]byte, 8)
 	utils.PutUint64(epic, t.meta.Epic)

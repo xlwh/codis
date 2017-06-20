@@ -40,7 +40,6 @@ func New(addr, debugVarAddr string, config *Config) (*Proxy, error) {
 		return nil, err
 	}
 
-	go s.polling()
 	go s.serve()
 	go s.keepAlive(config.keepAlivePeriod)
 	return s, nil
@@ -54,6 +53,7 @@ func (s *Proxy) Run() error {
 	}
 	s.topo.Run()
 	s.initMeta()
+	go s.polling()
 	return nil
 }
 
