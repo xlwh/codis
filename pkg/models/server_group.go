@@ -427,20 +427,13 @@ func (self *ServerGroup) Failover(conn zkhelper.Conn, passwd string, psync bool,
 		return "", errors.Trace(err)
 	}
 
-	if master != nil {
-		if !psync {
-			/* disable current master while SYNC */
-			master.Type = SERVER_TYPE_OFFLINE
-			if err := self.AddServer(conn, master, passwd); err != nil {
-				return "", errors.Trace(err)
-			}
-		}
-	} else if psync {
-		return "", errors.Trace(fmt.Errorf("PSYNC failed - master not exists"))
-	}
-
 	var target *Server
 	if psync {
+		/* master must exists */
+		if master == nil {
+			return "", errors.Trace(fmt.Errorf("PSYNC failed - master not exists"))
+		}
+
 		/* get candidate */
 		s, err := self.PSYNCSelectCandidate(tag)
 		if err != nil {
@@ -458,18 +451,24 @@ func (self *ServerGroup) Failover(conn zkhelper.Conn, passwd string, psync bool,
 			return "", errors.Trace(err)
 		}
 	} else {
-		/* try to disable write in case of master still alive. */
-		if master != nil {
-			log.Infof("try to disable write - %s", master.Addr)
-			utils.DisableWrite(master.Addr, passwd)
-		}
-
 		/* get candidate */
 		s, err := self.SYNCSelectCandidate(passwd, tag)
 		if err != nil {
 			return "", errors.Trace(err)
 		}
 		target = s
+
+		/* disable current master while SYNC */
+		master.Type = SERVER_TYPE_OFFLINE
+		if err := self.AddServer(conn, master, passwd); err != nil {
+			return "", errors.Trace(err)
+		}
+
+		/* try to disable write in case of master still alive. */
+		if master != nil {
+			log.Infof("try to disable write - %s", master.Addr)
+			utils.DisableWrite(master.Addr, passwd)
+		}
 
 		if err := self.SYNCInit(passwd, target); err != nil {
 			return "", errors.Trace(err)
